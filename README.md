@@ -197,7 +197,7 @@ poolsuite --help
 
 This tool streams music from Poolsuite FM's public SoundCloud playlists:
 
-1. **Discovery** - Reverse-engineered Poolsuite's web player to find their SoundCloud URLs
+1. **Discovery** - Uses Poolsuite's public SoundCloud playlists
 2. **Streaming** - Uses `mpv` or `yt-dlp` to stream directly from SoundCloud
 3. **Playback** - Handles HLS/DASH streaming automatically (160kbps AAC)
 
@@ -206,8 +206,6 @@ This tool streams music from Poolsuite FM's public SoundCloud playlists:
 - No API keys or authentication required
 - Streams use SoundCloud's HLS/DASH protocol (`.m4s` segments)
 - Zero web overhead - just pure audio streaming
-
-See [TECHNICAL.md](TECHNICAL.md) for full reverse-engineering details.
 
 ## 🐛 Troubleshooting
 
