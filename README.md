@@ -5,6 +5,30 @@
 An **unofficial** command-line player for [Poolsuite FM](https://poolsuite.net/)'s curated playlists. Stream their amazing music selections directly from your terminal!
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![GitHub release](https://img.shields.io/github/v/release/jamespember/poolsuite-cli?include_prereleases)](https://github.com/jamespember/poolsuite-cli/releases)
+[![GitHub stars](https://img.shields.io/github/stars/jamespember/poolsuite-cli)](https://github.com/jamespember/poolsuite-cli/stargazers)
+
+## Demo
+
+```bash
+$ poolsuite tokyo
+
+    ____              __          _ __       
+   / __ \____  ____  / /______  __(_) /____  
+  / /_/ / __ \/ __ \/ / ___/ / / / / __/ _ \ 
+ / ____/ /_/ / /_/ / (__  ) /_/ / / /_/  __/ 
+/_/    \____/\____/_/____/\__,_/_/\__/\___/  
+                                    CLI v1.0.0
+
+Ultra-summer internet radio from the command line
+
+Now Playing: tokyo
+URL: https://soundcloud.com/poolsuite/sets/tokyo-disco
+
+♪♫ Starting playback... ♫♪
+
+Playing: Tatsuro Yamashita - Sparkle (1:23 / 4:56) ▶
+```
 
 ## 🎵 About
 
