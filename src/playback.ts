@@ -1,10 +1,12 @@
 import { spawn } from "bun";
+import { writeFileSync, unlinkSync, existsSync } from "fs";
 import type { SoundCloudTrack } from "./soundcloud/types";
 import { SoundCloudClient } from "./soundcloud/client";
 import { showError, colorize } from "./ui";
 import { createMpvController } from "./mpv-ipc";
 import { initUI, updateIntroSteps, switchToPlayer, renderPlayerUI, clearPlayerUI, registerKeyHandler, clearKeyHandlers, type LoadingStep, type StepStatus } from "./player-ui";
 import { getPlaylistNames, getPlaylist } from "./playlists";
+import { INTRO_MP3_BASE64 } from "./intro-data";
 
 const SEEK_SECONDS = 10;
 
@@ -134,10 +136,15 @@ export async function startPlayer(
   initUI(steps);
 
   let client: SoundCloudClient;
-  const introPath = new URL("../ps_intro.mp3", import.meta.url).pathname;
+
+  // Write embedded intro to temp file
+  const introPath = `/tmp/poolsuite-intro-${process.pid}.mp3`;
+  writeFileSync(introPath, Buffer.from(INTRO_MP3_BASE64, "base64"));
 
   // Play intro audio in parallel with initialization
-  const introPromise = mpv.play(introPath).then(() => mpv.waitForEnd()).catch(() => {});
+  const introPromise = mpv.play(introPath).then(() => mpv.waitForEnd()).catch(() => {}).finally(() => {
+    if (existsSync(introPath)) unlinkSync(introPath);
+  });
 
   // Create client with dynamic status updates
   client = await SoundCloudClient.create((stepLabel) => {
