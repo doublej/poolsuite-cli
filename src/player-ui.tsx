@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { render, Box, Text, useInput, useApp } from "ink";
+import { render, Box, Text, useInput } from "ink";
 import type { SoundCloudTrack } from "./soundcloud/types";
 import { formatTime } from "./progress";
 
@@ -131,25 +131,19 @@ function App({ initialState }: { initialState: AppState }) {
   const [state, setState] = useState(initialState);
   const stateRef = useRef(state);
   stateRef.current = state;
-  const { exit } = useApp();
 
   // Handle input at App level so it works in all modes
   useInput((input, key) => {
-    // Direct quit handling - always works
-    if (input === "q" || key.escape) {
-      exit();
-      return;
-    }
-
     let k: string | null = null;
-    if (key.leftArrow || input === ",") k = "left";
+    if (input === "q" || key.escape) k = "q";
+    else if (key.leftArrow || input === ",") k = "left";
     else if (key.rightArrow || input === ".") k = "right";
     else if (input === " ") k = "space";
     else if (input === "n" || input === ">") k = "n";
     else if (input === "p" || input === "<") k = "p";
     else if (key.tab) k = "tab";
 
-    if (k && stateRef.current.mode === "player") {
+    if (k && globalKeyHandlers.length > 0) {
       globalKeyHandlers.forEach(h => h(k!));
     }
   });
@@ -158,12 +152,10 @@ function App({ initialState }: { initialState: AppState }) {
     globalSetAppState = (partial: Partial<AppState>) => {
       setState(prev => ({ ...prev, ...partial }));
     };
-    (globalThis as any).__inkExit = exit;
     return () => {
       globalSetAppState = null;
-      delete (globalThis as any).__inkExit;
     };
-  }, [exit]);
+  }, []);
 
   if (state.mode === "intro") {
     return <IntroScreen steps={state.steps} />;
@@ -178,9 +170,14 @@ function App({ initialState }: { initialState: AppState }) {
 
 // Public API
 export function initUI(steps: LoadingStep[]): void {
+  // Explicitly enable raw mode for keyboard input
+  if (process.stdin.isTTY && process.stdin.setRawMode) {
+    process.stdin.setRawMode(true);
+    process.stdin.resume();
+  }
+
   inkInstance = render(
-    <App initialState={{ mode: "intro", steps, playerState: null }} />,
-    { exitOnCtrlC: false }
+    <App initialState={{ mode: "intro", steps, playerState: null }} />
   );
 }
 
@@ -208,5 +205,9 @@ export function clearPlayerUI(): void {
   if (inkInstance) {
     inkInstance.unmount();
     inkInstance = null;
+  }
+  // Restore terminal to cooked mode
+  if (process.stdin.isTTY && process.stdin.setRawMode) {
+    process.stdin.setRawMode(false);
   }
 }
