@@ -1,39 +1,17 @@
-# Poolsuite CLI
+# poolsuite-cli
 
-Fork of [jamespember/poolsuite-cli](https://github.com/jamespember/poolsuite-cli) with the following changes:
+Terminal music player.
 
-## What's Different
+## Requirements
 
-- **Rewritten in TypeScript/Bun** - Originally a bash script
-- **TUI with tabbed playlists** - Switch between playlists with Tab key
-- **Loading progress UI** - Shows initialization steps as they complete
-- **Integrated controls** - Seek, pause, skip without leaving the app
-
-## Install
-
-```bash
-# Prerequisites: bun, mpv
-bun install
-bun run dev
-```
+- [Bun](https://bun.sh)
+- [mpv](https://mpv.io) (`brew install mpv`)
 
 ## Usage
 
 ```bash
-bun run dev [playlist] [-s]
+bun install
+bun run dev
 ```
 
-Controls: `Space` pause, `</>` seek, `n/p` track, `Tab` playlist, `q` quit
-
-## Auth
-
-Works without login. On first run, extracts API keys via headless browser.
-
-Optional SoundCloud login for private playlists:
-```bash
-bun run dev login
-```
-
-## Credits
-
-All music curation: [Poolsuite FM](https://poolsuite.net/)
+Or download the compiled binary from [releases](https://github.com/doublej/poolsuite-cli/releases).
