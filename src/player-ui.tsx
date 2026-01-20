@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { render, Box, Text, useInput, useApp } from "ink";
 import type { SoundCloudTrack } from "./soundcloud/types";
 import { formatTime } from "./progress";
@@ -129,20 +129,27 @@ function PlayerScreen({ state }: { state: PlayerState }) {
 // Main App - single instance that handles both modes
 function App({ initialState }: { initialState: AppState }) {
   const [state, setState] = useState(initialState);
+  const stateRef = useRef(state);
+  stateRef.current = state;
   const { exit } = useApp();
 
   // Handle input at App level so it works in all modes
   useInput((input, key) => {
+    // Direct quit handling - always works
+    if (input === "q" || key.escape) {
+      exit();
+      return;
+    }
+
     let k: string | null = null;
     if (key.leftArrow || input === ",") k = "left";
     else if (key.rightArrow || input === ".") k = "right";
     else if (input === " ") k = "space";
     else if (input === "n" || input === ">") k = "n";
     else if (input === "p" || input === "<") k = "p";
-    else if (input === "q" || key.escape) k = "q";
     else if (key.tab) k = "tab";
 
-    if (k && state.mode === "player") {
+    if (k && stateRef.current.mode === "player") {
       globalKeyHandlers.forEach(h => h(k!));
     }
   });
