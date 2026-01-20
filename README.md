@@ -25,6 +25,15 @@ bun run dev [playlist] [-s]
 
 Controls: `Space` pause, `</>` seek, `n/p` track, `Tab` playlist, `q` quit
 
+## Auth
+
+Works without login. On first run, extracts API keys via headless browser.
+
+Optional SoundCloud login for private playlists:
+```bash
+bun run dev login
+```
+
 ## Credits
 
 All music curation: [Poolsuite FM](https://poolsuite.net/)
