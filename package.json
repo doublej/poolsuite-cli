@@ -9,9 +9,8 @@
   },
   "scripts": {
     "start": "bun run src/index.ts",
-    "dev": "bun run --watch src/index.ts",
+    "dev": "bun run src/index.ts",
     "typecheck": "bun run tsc --noEmit",
-    "build": "bun build src/index.ts --compile --outfile=poolsuite",
     "format": "bunx prettier --write 'src/**/*.ts'",
     "lint": "bunx tsc --noEmit"
   },
