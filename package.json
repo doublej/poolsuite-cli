@@ -1,6 +1,6 @@
 {
   "name": "poolsuite-cli",
-  "version": "2.1.0",
+  "version": "2.1.1",
   "description": "Ultra-summer internet radio from your terminal - Poolsuite FM CLI player",
   "type": "module",
   "main": "src/index.ts",

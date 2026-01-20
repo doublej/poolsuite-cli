@@ -3,7 +3,7 @@ import { render, Box, Text, useInput } from "ink";
 import type { SoundCloudTrack } from "./soundcloud/types";
 import { formatTime } from "./progress";
 
-const VERSION = "2.1.0";
+const VERSION = "2.1.1";
 
 const LOGO = [
   "                 _         _ _",
