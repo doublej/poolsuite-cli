@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from "react";
-import { render, Box, Text, useInput, useApp, useStdin } from "ink";
+import { render, Box, Text, useInput, useApp } from "ink";
 import type { SoundCloudTrack } from "./soundcloud/types";
 import { formatTime } from "./progress";
 
-const VERSION = "1.1.0";
+const VERSION = "2.1.0";
 
 const LOGO = [
   "                 _         _ _",
@@ -30,9 +30,18 @@ interface PlayerState {
   loadingMessage?: string;
 }
 
-// Ink instance reference
+type AppMode = "intro" | "player";
+
+interface AppState {
+  mode: AppMode;
+  steps: LoadingStep[];
+  playerState: PlayerState | null;
+}
+
+// Global state and handlers
 let inkInstance: ReturnType<typeof render> | null = null;
-let currentKeyHandler: ((key: string) => void) | null = null;
+let globalSetAppState: ((state: Partial<AppState>) => void) | null = null;
+const globalKeyHandlers: ((key: string) => void)[] = [];
 
 // Intro Screen Component
 function IntroScreen({ steps }: { steps: LoadingStep[] }) {
@@ -61,19 +70,23 @@ function IntroScreen({ steps }: { steps: LoadingStep[] }) {
 }
 
 // Player Screen Component
-function PlayerScreen({ state, onKey }: { state: PlayerState; onKey: (key: string) => void }) {
+function PlayerScreen({ state }: { state: PlayerState }) {
   const { allPlaylistKeys, playlistKey, track, trackIndex, totalTracks, position, duration, isPaused, loadingMessage } = state;
-  const { isRawModeSupported } = useStdin();
 
   useInput((input, key) => {
-    if (key.leftArrow || input === ",") onKey("left");
-    else if (key.rightArrow || input === ".") onKey("right");
-    else if (input === " ") onKey("space");
-    else if (input === "n" || input === ">") onKey("n");
-    else if (input === "p" || input === "<") onKey("p");
-    else if (input === "q" || key.escape) onKey("q");
-    else if (key.tab) onKey("tab");
-  }, { isActive: isRawModeSupported });
+    let k: string | null = null;
+    if (key.leftArrow || input === ",") k = "left";
+    else if (key.rightArrow || input === ".") k = "right";
+    else if (input === " ") k = "space";
+    else if (input === "n" || input === ">") k = "n";
+    else if (input === "p" || input === "<") k = "p";
+    else if (input === "q" || key.escape) k = "q";
+    else if (key.tab) k = "tab";
+
+    if (k) {
+      globalKeyHandlers.forEach(h => h(k!));
+    }
+  });
 
   // Tabs
   const tabs = allPlaylistKeys.map((key, idx) => {
@@ -128,62 +141,52 @@ function PlayerScreen({ state, onKey }: { state: PlayerState; onKey: (key: strin
   );
 }
 
-// Main App wrapper for player
-function App({ initialState, keyHandler }: { initialState: PlayerState; keyHandler: (key: string) => void }) {
+// Main App - single instance that handles both modes
+function App({ initialState }: { initialState: AppState }) {
   const [state, setState] = useState(initialState);
   const { exit } = useApp();
 
-  // Expose setState globally
   useEffect(() => {
-    (globalThis as any).__inkSetState = setState;
+    globalSetAppState = (partial: Partial<AppState>) => {
+      setState(prev => ({ ...prev, ...partial }));
+    };
     (globalThis as any).__inkExit = exit;
     return () => {
-      delete (globalThis as any).__inkSetState;
+      globalSetAppState = null;
       delete (globalThis as any).__inkExit;
     };
   }, [exit]);
 
-  return <PlayerScreen state={state} onKey={keyHandler} />;
+  if (state.mode === "intro") {
+    return <IntroScreen steps={state.steps} />;
+  }
+
+  if (state.playerState) {
+    return <PlayerScreen state={state.playerState} />;
+  }
+
+  return <Text>Loading...</Text>;
 }
 
 // Public API
-export function initInkUI(): void {
-  // Ink will be initialized when needed
-}
-
-export async function showIntroScreen(
-  steps: LoadingStep[],
-  onComplete: (setStep: StepCallback) => Promise<void>
-): Promise<void> {
-  let rerender: () => void;
-
-  const setStep: StepCallback = (label: string, status: StepStatus) => {
-    const step = steps.find(s => s.label === label);
-    if (step) step.status = status;
-    rerender?.();
-  };
-
-  // Render intro
-  const { rerender: r, unmount, clear } = render(
-    <IntroScreen steps={steps} />,
+export function initUI(steps: LoadingStep[]): void {
+  inkInstance = render(
+    <App initialState={{ mode: "intro", steps, playerState: null }} />,
     { exitOnCtrlC: false }
   );
-  rerender = () => r(<IntroScreen steps={steps} />);
+}
 
-  await onComplete(setStep);
-  clear();
-  unmount();
+export function updateIntroSteps(steps: LoadingStep[]): void {
+  globalSetAppState?.({ steps: [...steps] });
+}
+
+export function switchToPlayer(playerState: PlayerState): void {
+  globalSetAppState?.({ mode: "player", playerState });
 }
 
 export async function renderPlayerUI(state: PlayerState): Promise<void> {
-  const setState = (globalThis as any).__inkSetState;
-  if (setState) {
-    setState(state);
-  }
+  globalSetAppState?.({ playerState: state });
 }
-
-// Global key handlers that playback.ts can register to
-const globalKeyHandlers: ((key: string) => void)[] = [];
 
 export function registerKeyHandler(handler: (key: string) => void): void {
   globalKeyHandlers.push(handler);
@@ -193,25 +196,9 @@ export function clearKeyHandlers(): void {
   globalKeyHandlers.length = 0;
 }
 
-export function startPlayerUI(initialState: PlayerState): void {
-  const handleKey = (key: string) => {
-    globalKeyHandlers.forEach(h => h(key));
-  };
-
-  inkInstance = render(
-    <App initialState={initialState} keyHandler={handleKey} />,
-    { exitOnCtrlC: false }
-  );
-}
-
 export function clearPlayerUI(): void {
   if (inkInstance) {
     inkInstance.unmount();
     inkInstance = null;
   }
-}
-
-export function exitApp(): void {
-  const exit = (globalThis as any).__inkExit;
-  if (exit) exit();
 }

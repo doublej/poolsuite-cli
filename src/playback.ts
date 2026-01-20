@@ -3,7 +3,7 @@ import type { SoundCloudTrack } from "./soundcloud/types";
 import { SoundCloudClient } from "./soundcloud/client";
 import { showError, colorize } from "./ui";
 import { createMpvController } from "./mpv-ipc";
-import { renderPlayerUI, clearPlayerUI, showIntroScreen, startPlayerUI, registerKeyHandler, clearKeyHandlers, type LoadingStep, type StepStatus } from "./player-ui";
+import { initUI, updateIntroSteps, switchToPlayer, renderPlayerUI, clearPlayerUI, registerKeyHandler, clearKeyHandlers, type LoadingStep, type StepStatus } from "./player-ui";
 import { getPlaylistNames, getPlaylist } from "./playlists";
 
 const SEEK_SECONDS = 10;
@@ -130,53 +130,52 @@ export async function startPlayer(
     { label: "Loading config", status: "pending" },
   ];
 
+  // Initialize single ink UI instance
+  initUI(steps);
+
   let client: SoundCloudClient;
   const introPath = new URL("../ps_intro.mp3", import.meta.url).pathname;
 
-  await showIntroScreen(steps, async (setStep) => {
-    // Play intro audio in parallel with initialization
-    const introPromise = mpv.play(introPath).then(() => mpv.waitForEnd()).catch(() => {});
+  // Play intro audio in parallel with initialization
+  const introPromise = mpv.play(introPath).then(() => mpv.waitForEnd()).catch(() => {});
 
-    // Create client with dynamic status updates
-    client = await SoundCloudClient.create((stepLabel) => {
-      // Mark current active step as done
-      for (const s of steps) {
-        if (s.status === "active") s.status = "done";
-      }
-      // Add step if not exists, then set active
-      let step = steps.find(s => s.label === stepLabel);
-      if (!step) {
-        step = { label: stepLabel, status: "pending" };
-        // Insert before "Resolving playlist" if it exists, otherwise append
-        const resolveIdx = steps.findIndex(s => s.label === "Resolving playlist");
-        if (resolveIdx >= 0) steps.splice(resolveIdx, 0, step);
-        else steps.push(step);
-      }
-      step.status = "active";
-      setStep(stepLabel, "active");
-    });
-
-    // Mark all active steps as done
+  // Create client with dynamic status updates
+  client = await SoundCloudClient.create((stepLabel) => {
+    // Mark current active step as done
     for (const s of steps) {
       if (s.status === "active") s.status = "done";
     }
-
-    // Add and activate resolving playlist step
-    steps.push({ label: "Resolving playlist", status: "active" });
-    setStep("Resolving playlist", "active");
-
-    // Wait for intro to finish
-    await introPromise;
-
-    // Mark resolving as done
-    const resolveStep = steps.find(s => s.label === "Resolving playlist");
-    if (resolveStep) resolveStep.status = "done";
+    // Add step if not exists, then set active
+    let step = steps.find(s => s.label === stepLabel);
+    if (!step) {
+      step = { label: stepLabel, status: "pending" };
+      steps.push(step);
+    }
+    step.status = "active";
+    updateIntroSteps(steps);
   });
+
+  // Mark all active steps as done
+  for (const s of steps) {
+    if (s.status === "active") s.status = "done";
+  }
+
+  // Add and activate resolving playlist step
+  steps.push({ label: "Resolving playlist", status: "active" });
+  updateIntroSteps(steps);
+
+  // Wait for intro to finish
+  await introPromise;
+
+  // Mark resolving as done
+  const resolveStep = steps.find(s => s.label === "Resolving playlist");
+  if (resolveStep) resolveStep.status = "done";
+  updateIntroSteps(steps);
 
   let currentPlaylistKey = initialPlaylistKey;
 
-  // Start player UI with initial loading state
-  startPlayerUI({
+  // Switch to player mode
+  switchToPlayer({
     allPlaylistKeys,
     playlistKey: currentPlaylistKey,
     track: null,
