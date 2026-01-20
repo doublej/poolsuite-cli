@@ -3,7 +3,7 @@ import type { SoundCloudTrack } from "./soundcloud/types";
 import { SoundCloudClient } from "./soundcloud/client";
 import { showError, colorize } from "./ui";
 import { createMpvController } from "./mpv-ipc";
-import { renderPlayerUI, clearPlayerUI, initBlessedUI, showIntroScreen, type LoadingStep, type StepStatus } from "./player-ui";
+import { renderPlayerUI, clearPlayerUI, showIntroScreen, startPlayerUI, registerKeyHandler, clearKeyHandlers, type LoadingStep, type StepStatus } from "./player-ui";
 import { getPlaylistNames, getPlaylist } from "./playlists";
 
 const SEEK_SECONDS = 10;
@@ -124,14 +124,6 @@ export async function startPlayer(
 ): Promise<void> {
   const allPlaylistKeys = getPlaylistNames();
   const mpv = createMpvController();
-  const screen = initBlessedUI();
-
-  const keyHandlers: ((key: string) => void)[] = [];
-  screen.key(["left", "right", "space", "n", "p", "q", "escape", "tab", ",", ".", "<", ">", "C-c"], (ch, key) => {
-    const k = key.name || ch;
-    keyHandlers.forEach(h => h(k));
-  });
-  screen.key(["C-c"], () => { clearPlayerUI(); process.exit(0); });
 
   // Define loading steps (dynamically populated)
   const steps: LoadingStep[] = [
@@ -161,6 +153,7 @@ export async function startPlayer(
         else steps.push(step);
       }
       step.status = "active";
+      setStep(stepLabel, "active");
     });
 
     // Mark all active steps as done
@@ -170,6 +163,7 @@ export async function startPlayer(
 
     // Add and activate resolving playlist step
     steps.push({ label: "Resolving playlist", status: "active" });
+    setStep("Resolving playlist", "active");
 
     // Wait for intro to finish
     await introPromise;
@@ -180,6 +174,22 @@ export async function startPlayer(
   });
 
   let currentPlaylistKey = initialPlaylistKey;
+
+  // Start player UI with initial loading state
+  startPlayerUI({
+    allPlaylistKeys,
+    playlistKey: currentPlaylistKey,
+    track: null,
+    trackIndex: 0,
+    totalTracks: 0,
+    position: 0,
+    duration: 0,
+    isPaused: false,
+    loadingMessage: "Resolving playlist...",
+  });
+
+  // Handle Ctrl+C
+  process.on("SIGINT", () => { clearPlayerUI(); process.exit(0); });
 
   while (true) {
     const playlist = getPlaylist(currentPlaylistKey);
@@ -198,9 +208,9 @@ export async function startPlayer(
       loadingMessage: "Resolving playlist...",
     });
 
-    keyHandlers.length = 0;
+    clearKeyHandlers();
     const tracks = await client!.resolvePlaylistTracks(playlist.url);
-    const result = await playTracks(client!, tracks, shouldShuffle, currentPlaylistKey, allPlaylistKeys, mpv, cb => keyHandlers.push(cb));
+    const result = await playTracks(client!, tracks, shouldShuffle, currentPlaylistKey, allPlaylistKeys, mpv, registerKeyHandler);
 
     if (result === "quit" || result === "end") break;
     if (typeof result === "object") currentPlaylistKey = result.switchTo;

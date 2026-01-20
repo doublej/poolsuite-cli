@@ -10,6 +10,7 @@
   "scripts": {
     "start": "bun run src/index.ts",
     "dev": "bun run src/index.ts",
+    "build": "bun build src/index.ts --compile --outfile=poolsuite",
     "typecheck": "bun run tsc --noEmit",
     "format": "bunx prettier --write 'src/**/*.ts'",
     "lint": "bunx tsc --noEmit"
@@ -26,12 +27,14 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "@types/blessed": "^0.1.27",
-    "blessed": "^0.1.81",
-    "puppeteer": "^24.0.0"
+    "ink": "^6.6.0",
+    "puppeteer": "^24.0.0",
+    "react": "^19.2.3"
   },
   "devDependencies": {
     "@types/bun": "latest",
+    "@types/react": "^19.2.8",
+    "react-devtools-core": "^7.0.1",
     "typescript": "^5.0.0"
   }
 }

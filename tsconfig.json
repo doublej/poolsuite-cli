@@ -12,9 +12,10 @@
     "resolveJsonModule": true,
     "isolatedModules": true,
     "verbatimModuleSyntax": true,
+    "jsx": "react-jsx",
     "lib": ["ES2022", "DOM"],
     "types": ["bun-types"]
   },
-  "include": ["src/**/*"],
+  "include": ["src/**/*", "src/**/*.tsx"],
   "exclude": ["node_modules"]
 }
