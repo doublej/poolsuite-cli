@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { render, Box, Text, useInput, useApp } from "ink";
+import { render, Box, Text, useInput, useApp, useStdin } from "ink";
 import type { SoundCloudTrack } from "./soundcloud/types";
 import { formatTime } from "./progress";
 
@@ -63,6 +63,7 @@ function IntroScreen({ steps }: { steps: LoadingStep[] }) {
 // Player Screen Component
 function PlayerScreen({ state, onKey }: { state: PlayerState; onKey: (key: string) => void }) {
   const { allPlaylistKeys, playlistKey, track, trackIndex, totalTracks, position, duration, isPaused, loadingMessage } = state;
+  const { isRawModeSupported } = useStdin();
 
   useInput((input, key) => {
     if (key.leftArrow || input === ",") onKey("left");
@@ -72,14 +73,14 @@ function PlayerScreen({ state, onKey }: { state: PlayerState; onKey: (key: strin
     else if (input === "p" || input === "<") onKey("p");
     else if (input === "q" || key.escape) onKey("q");
     else if (key.tab) onKey("tab");
-  });
+  }, { isActive: isRawModeSupported });
 
   // Tabs
-  const tabs = allPlaylistKeys.map(key => {
+  const tabs = allPlaylistKeys.map((key, idx) => {
     const label = key.length > 8 ? key.slice(0, 7) + "." : key;
     const isActive = key === playlistKey;
     return (
-      <Text key={key} color={isActive ? "cyan" : "blue"} bold={isActive}>
+      <Text key={`tab-${idx}`} color={isActive ? "cyan" : "blue"} bold={isActive}>
         {isActive ? `[${label}]` : ` ${label} `}
       </Text>
     );
@@ -163,13 +164,14 @@ export async function showIntroScreen(
   };
 
   // Render intro
-  const { rerender: r, unmount, waitUntilExit } = render(
+  const { rerender: r, unmount, clear } = render(
     <IntroScreen steps={steps} />,
     { exitOnCtrlC: false }
   );
   rerender = () => r(<IntroScreen steps={steps} />);
 
   await onComplete(setStep);
+  clear();
   unmount();
 }
 
