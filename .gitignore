@@ -18,3 +18,15 @@
 # Test files
 test-*.sh
 debug-*.txt
+
+# Node/Bun
+node_modules/
+bun.lockb
+
+# Build output
+dist/
+*.exe
+/poolsuite
+
+# Config (contains user credentials)
+.poolsuite/
