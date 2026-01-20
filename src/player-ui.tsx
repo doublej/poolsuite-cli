@@ -73,21 +73,6 @@ function IntroScreen({ steps }: { steps: LoadingStep[] }) {
 function PlayerScreen({ state }: { state: PlayerState }) {
   const { allPlaylistKeys, playlistKey, track, trackIndex, totalTracks, position, duration, isPaused, loadingMessage } = state;
 
-  useInput((input, key) => {
-    let k: string | null = null;
-    if (key.leftArrow || input === ",") k = "left";
-    else if (key.rightArrow || input === ".") k = "right";
-    else if (input === " ") k = "space";
-    else if (input === "n" || input === ">") k = "n";
-    else if (input === "p" || input === "<") k = "p";
-    else if (input === "q" || key.escape) k = "q";
-    else if (key.tab) k = "tab";
-
-    if (k) {
-      globalKeyHandlers.forEach(h => h(k!));
-    }
-  });
-
   // Tabs
   const tabs = allPlaylistKeys.map((key, idx) => {
     const label = key.length > 8 ? key.slice(0, 7) + "." : key;
@@ -145,6 +130,22 @@ function PlayerScreen({ state }: { state: PlayerState }) {
 function App({ initialState }: { initialState: AppState }) {
   const [state, setState] = useState(initialState);
   const { exit } = useApp();
+
+  // Handle input at App level so it works in all modes
+  useInput((input, key) => {
+    let k: string | null = null;
+    if (key.leftArrow || input === ",") k = "left";
+    else if (key.rightArrow || input === ".") k = "right";
+    else if (input === " ") k = "space";
+    else if (input === "n" || input === ">") k = "n";
+    else if (input === "p" || input === "<") k = "p";
+    else if (input === "q" || key.escape) k = "q";
+    else if (key.tab) k = "tab";
+
+    if (k && state.mode === "player") {
+      globalKeyHandlers.forEach(h => h(k!));
+    }
+  });
 
   useEffect(() => {
     globalSetAppState = (partial: Partial<AppState>) => {
